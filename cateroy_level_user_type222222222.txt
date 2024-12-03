@@ -1,0 +1,109 @@
+USE my_datbase;
+
+WITH customer_orders AS (
+    SELECT 
+        o.customer_id,
+        p.category,
+        COUNT(o.order_id) AS total_orders,
+        SUM(CASE WHEN o.order_date = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE 0 END) AS yday_orders,
+        SUM(CASE WHEN MONTH(o.order_date) = MONTH(CURDATE()) AND YEAR(o.order_date) = YEAR(CURDATE()) THEN 1 ELSE 0 END) AS mtd_orders,
+        SUM(CASE WHEN MONTH(o.order_date) = MONTH(CURDATE() - INTERVAL 1 MONTH) AND YEAR(o.order_date) = YEAR(CURDATE()) THEN 1 ELSE 0 END) AS lmtd_orders,
+        SUM(CASE WHEN MONTH(o.order_date) = MONTH(CURDATE() - INTERVAL 2 MONTH) AND YEAR(o.order_date) = YEAR(CURDATE()) THEN 1 ELSE 0 END) AS lm_orders
+    FROM order_details_v1 o
+    JOIN producthierarchy p ON o.product_id = p.product_id  -- Adjust join condition as needed
+    GROUP BY o.customer_id, p.category
+),
+
+user_types AS (
+    SELECT 
+        customer_id,
+        category,
+        CASE 
+            WHEN total_orders = 1 THEN 'New Customers'
+            ELSE 'Repeat Customers'
+        END AS user_type,
+        yday_orders,
+        mtd_orders,
+        lmtd_orders,
+        lm_orders
+    FROM 
+        customer_orders
+),
+
+yday_metrics AS (
+    SELECT 
+        user_type,
+        category,
+        COUNT(DISTINCT customer_id) AS yday_customers,
+        COUNT(DISTINCT customer_id) * 100.0 / NULLIF(SUM(yday_orders), 0) AS yday_ratio
+    FROM 
+        user_types
+    GROUP BY 
+        user_type, category
+),
+
+mtd_metrics AS (
+    SELECT 
+        user_type,
+        category,
+        COUNT(DISTINCT customer_id) AS mtd_customers,
+        COUNT(DISTINCT customer_id) * 100.0 / NULLIF(SUM(mtd_orders), 0) AS mtd_ratio
+    FROM 
+        user_types
+    GROUP BY 
+        user_type, category
+),
+
+lmtd_metrics AS (
+    SELECT 
+        user_type,
+        category,
+        COUNT(DISTINCT customer_id) AS lmtd_customers,
+        COUNT(DISTINCT customer_id) * 100.0 / NULLIF(SUM(lmtd_orders), 0) AS lmtd_ratio
+    FROM 
+        user_types
+    GROUP BY 
+        user_type, category
+),
+
+lm_metrics AS (
+    SELECT 
+        user_type,
+        category,
+        COUNT(DISTINCT customer_id) AS lm_customers,
+        COUNT(DISTINCT customer_id) * 100.0 / NULLIF(SUM(lm_orders), 0) AS lm_ratio
+    FROM 
+        user_types
+    GROUP BY 
+        user_type, category
+)
+
+SELECT 
+    u.category,  -- Moved category to the first position
+    u.user_type,
+    COALESCE(y.yday_customers, 0) AS yday_customers,
+    CONCAT(ROUND(COALESCE(y.yday_ratio, 0), 1), '%') AS yday_ratio,
+    COALESCE(m.mtd_customers, 0) AS mtd_customers,
+    CONCAT(ROUND(COALESCE(m.mtd_ratio, 0), 1), '%') AS mtd_ratio,
+    COALESCE(lm.lmtd_customers, 0) AS lmtd_customers,
+    CONCAT(ROUND(COALESCE(lm.lmtd_ratio, 0), 1), '%') AS lmtd_ratio,
+    COALESCE(lm2.lm_customers, 0) AS lm_customers,
+    CONCAT(ROUND(COALESCE(lm2.lm_ratio, 0), 1), '%') AS lm_ratio
+FROM 
+    (SELECT DISTINCT user_type, category FROM user_types) u
+LEFT JOIN yday_metrics y ON u.user_type = y.user_type AND u.category = y.category
+LEFT JOIN mtd_metrics m ON u.user_type = m.user_type AND u.category = m.category
+LEFT JOIN lmtd_metrics lm ON u.user_type = lm.user_type AND u.category = lm.category
+LEFT JOIN lm_metrics lm2 ON u.user_type = lm2.user_type AND u.category = lm2.category;
+
+
+
+
+
+
+show tables
+describe order_details_v1;
+describe producthierarchy;
+describe store_cities;
+
+DESCRIBE categories;  -- If it exists

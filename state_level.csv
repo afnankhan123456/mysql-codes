@@ -1,0 +1,6 @@
+state,yday_order,yday_revenue,gmv,yday_user,mtd_order,mtd_revenue,mtd_gmv,mtd_user,yday_new_customer,mtd_new_customer,yday_order_growth,mtd_order_growth,yday_revenue_growth,mtd_gmv_growth,mtd_revenue_growth,live_store_count,live_product_count,lm_order,lm_revenue,lm_gmv,lm_live_store
+" Texas ",2,3137.22,5647,2,78,110997.78,199796,78,1,6,5,121,4470.00,0,0.00,4,5,74,92132.78,165839,16
+" Texas ",2,3137.22,5647,2,78,110997.78,199796,78,1,1,5,121,4470.00,0,0.00,4,5,74,92132.78,165839,16
+" Florida ",1,2367.22,4261,1,58,76897.22,138415,58,1,10,5,121,4470.00,0,0.00,4,5,58,70244.44,126440,12
+" Tennessee ",1,2765.00,4977,1,16,27670.00,49806,16,1,2,5,121,4470.00,0,0.00,4,5,11,12774.44,22994,3
+" Washington ",1,1154.44,2078,1,9,9609.44,17297,9,1,1,5,121,4470.00,0,0.00,4,5,5,4422.22,7960,1

@@ -1,0 +1,76 @@
+WITH month_sequence AS (
+    SELECT 
+        DATE_FORMAT(DATE_ADD('2023-01-01', INTERVAL (n.n - 1) MONTH), '%b-%Y') AS month
+    FROM 
+        (SELECT 1 AS n 
+        UNION ALL SELECT 2 
+        UNION ALL SELECT 3 
+        UNION ALL SELECT 4 
+		UNION ALL SELECT 5
+        UNION ALL SELECT 6
+        UNION ALL SELECT 7
+        UNION ALL SELECT 8 
+        UNION ALL SELECT 9
+        UNION ALL SELECT 10 
+        UNION ALL SELECT 11 
+        UNION ALL SELECT 12 
+        UNION ALL SELECT 13
+        UNION ALL SELECT 14
+        UNION ALL SELECT 15 
+        UNION ALL SELECT 16 
+        UNION ALL SELECT 17
+        UNION ALL SELECT 18 )n
+),
+monthly_data AS (
+    SELECT 
+        DATE_FORMAT(order_date, '%b-%Y') AS month,
+        COUNT(DISTINCT customer_id) AS unique_customers,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-01' THEN 1 ELSE 0 END) AS M1,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-02' THEN 1 ELSE 0 END) AS M2,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-03' THEN 1 ELSE 0 END) AS M3,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-04' THEN 1 ELSE 0 END) AS M4,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-05' THEN 1 ELSE 0 END) AS M5,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-06' THEN 1 ELSE 0 END) AS M6,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-07' THEN 1 ELSE 0 END) AS M7,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-08' THEN 1 ELSE 0 END) AS M8,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-09' THEN 1 ELSE 0 END) AS M9,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-10' THEN 1 ELSE 0 END) AS M10,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-11' THEN 1 ELSE 0 END) AS M11,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2023-12' THEN 1 ELSE 0 END) AS M12,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2024-01' THEN 1 ELSE 0 END) AS M13,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2024-02' THEN 1 ELSE 0 END) AS M14,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2024-03' THEN 1 ELSE 0 END) AS M15,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2024-04' THEN 1 ELSE 0 END) AS M16,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2024-05' THEN 1 ELSE 0 END) AS M17,
+        SUM(CASE WHEN DATE_FORMAT(order_date, '%Y-%m') = '2024-06' THEN 1 ELSE 0 END) AS M18
+    FROM order_details_v1
+    WHERE order_date BETWEEN '2023-01-01' AND '2024-06-30'
+    GROUP BY month
+)
+
+SELECT 
+    ms.month,
+    COALESCE(md.unique_customers, 0) AS unique_customers,
+    CONCAT(ROUND(COALESCE(md.M1, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M1,
+    CONCAT(ROUND(COALESCE(md.M2, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M2,
+    CONCAT(ROUND(COALESCE(md.M3, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M3,
+    CONCAT(ROUND(COALESCE(md.M4, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M4,
+    CONCAT(ROUND(COALESCE(md.M5, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M5,
+    CONCAT(ROUND(COALESCE(md.M6, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M6,
+    CONCAT(ROUND(COALESCE(md.M7, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M7,
+    CONCAT(ROUND(COALESCE(md.M8, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M8,
+    CONCAT(ROUND(COALESCE(md.M9, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M9,
+    CONCAT(ROUND(COALESCE(md.M10, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M10,
+    CONCAT(ROUND(COALESCE(md.M11, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M11,
+    CONCAT(ROUND(COALESCE(md.M12, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M12,
+    CONCAT(ROUND(COALESCE(md.M13, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M13,
+    CONCAT(ROUND(COALESCE(md.M14, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M14,
+    CONCAT(ROUND(COALESCE(md.M15, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M15,
+    CONCAT(ROUND(COALESCE(md.M16, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M16,
+    CONCAT(ROUND(COALESCE(md.M17, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M17,
+    CONCAT(ROUND(COALESCE(md.M18, 0) * 100.0 / NULLIF(md.unique_customers, 0), 2), '%') AS M18
+FROM month_sequence ms
+LEFT JOIN monthly_data md ON ms.month = md.month
+ORDER BY STR_TO_DATE(ms.month, '%b-%Y');
+
+

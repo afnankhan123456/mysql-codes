@@ -1,0 +1,6 @@
+category,sub_category,brand,yday_order,yday_revenue,gmv,yday_user,mtd_order,mtd_revenue,mtd_gmv,mtd_user,yday_new_customer,mtd_new_customer,yday_order_growth,mtd_order_growth,yday_revenue_growth,mtd_gmv_growth,mtd_revenue_growth,live_store_count,live_product_count,lm_order,lm_revenue,lm_gmv,lm_live_store
+"Bakery, Cakes & Dairy "," Dairy","Kool - Badam (Amul)",1,1431.11,2576,1,563,786168.33,1415103,561,1,17,1,121,4470.00,0,0.00,4,5,612,833450.00,1500210,135
+"Beauty & Hygiene "," Bath & Hand Wash","Pure Magic Deuce Vanilla Biscuits (Britannia)",1,2765.00,4977,1,563,786168.33,1415103,561,1,15,1,121,4470.00,0,0.00,4,5,612,833450.00,1500210,135
+"Cleaning & Household "," Pooja Needs","Synthetic Food Colour Preparation Kesar Yellow (999)",1,1154.44,2078,1,563,786168.33,1415103,561,1,11,1,121,4470.00,0,0.00,4,5,612,833450.00,1500210,135
+"Fruits & Vegetables "," Fresh Vegetables","Cabbage - Red (Fresho)",1,1706.11,3071,1,563,786168.33,1415103,561,1,36,1,121,4470.00,0,0.00,4,5,612,833450.00,1500210,135
+"Snacks & Branded Foods "," Snacks & Namkeen","Flax Seeds (The Nibble Box)",1,2367.22,4261,1,563,786168.33,1415103,561,1,47,1,121,4470.00,0,0.00,4,5,612,833450.00,1500210,135

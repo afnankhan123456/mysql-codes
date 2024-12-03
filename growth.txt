@@ -1,0 +1,31 @@
+WITH yday_order_growth AS (
+    SELECT
+        COUNT(CASE WHEN DATE(order_date) = CURDATE() - INTERVAL 1 DAY THEN order_id END) AS yday_order,
+        COUNT(CASE WHEN DATE(order_date) = CURDATE() - INTERVAL 2 DAY THEN order_id END) AS day_before_order
+    FROM order_details_v1
+),
+mtd_order_growth AS (
+    SELECT
+        COUNT(CASE WHEN MONTH(order_date) = MONTH(CURDATE()) AND YEAR(order_date) = YEAR(CURDATE()) THEN order_id END) AS mtd_order,
+        COUNT(CASE WHEN MONTH(order_date) = MONTH(CURDATE()) - 1 AND YEAR(order_date) = YEAR(CURDATE()) THEN order_id END) AS last_month_order
+    FROM order_details_v1
+),
+lmtd_order_growth AS (
+    SELECT
+        COUNT(CASE WHEN MONTH(order_date) = MONTH(CURDATE()) - 1 AND YEAR(order_date) = YEAR(CURDATE()) THEN order_id END) AS lmtd_order,
+        COUNT(CASE WHEN MONTH(order_date) = MONTH(CURDATE()) - 2 AND YEAR(order_date) = YEAR(CURDATE()) THEN order_id END) AS lmtd_previous_order
+    FROM order_details_v1
+),
+last_month_growth AS (
+    SELECT
+        COUNT(CASE WHEN MONTH(order_date) = MONTH(CURDATE()) - 1 AND YEAR(order_date) = YEAR(CURDATE()) THEN order_id END) AS last_month_order,
+        COUNT(CASE WHEN MONTH(order_date) = MONTH(CURDATE()) - 2 AND YEAR(order_date) = YEAR(CURDATE()) THEN order_id END) AS day_before_last_month_order
+    FROM order_details_v1
+)
+
+SELECT 
+    y.yday_order - y.day_before_order AS yday_order_growth,
+    m.mtd_order - m.last_month_order AS mtd_order_growth,
+    l.lmtd_order - l.lmtd_previous_order AS lmtd_order_growth,
+    lm.last_month_order - lm.day_before_last_month_order AS last_month_growth
+FROM yday_order_growth y, mtd_order_growth m, lmtd_order_growth l, last_month_growth lm;

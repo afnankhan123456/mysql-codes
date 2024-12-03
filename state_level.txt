@@ -1,0 +1,170 @@
+  
+
+USE my_database;
+
+WITH daily_metrics AS (
+    SELECT
+        z.state,
+        COUNT(DISTINCT a.order_id) AS yday_order,
+        ROUND(SUM(a.selling_price) / 1.8, 2) AS yday_revenue,
+        SUM(a.selling_price) AS gmv,
+        COUNT(DISTINCT a.customer_id) AS yday_user
+    FROM order_details_v1 a
+    JOIN store_cities z ON a.store_id = z.store_id
+    WHERE a.order_date = CURDATE() - INTERVAL 1 DAY
+    GROUP BY z.state
+),
+mtd_customers AS (
+    SELECT
+        z.state,
+        COUNT(DISTINCT a.order_id) AS mtd_order,
+        ROUND(SUM(a.selling_price) / 1.8, 2) AS mtd_revenue,
+        SUM(a.selling_price) AS mtd_gmv,
+        COUNT(DISTINCT a.product_id) AS mtd_live_product,
+        COUNT(DISTINCT a.store_id) AS mtd_live_store,
+        COUNT(DISTINCT a.customer_id) AS mtd_user
+    FROM order_details_v1 a
+    JOIN store_cities z ON a.store_id = z.store_id
+    WHERE MONTH(a.order_date) = MONTH(CURDATE())
+    GROUP BY z.state
+),
+lm_customers AS (
+    SELECT
+        z.state,
+        COUNT(DISTINCT a.order_id) AS lm_order,
+        ROUND(SUM(a.selling_price) / 1.8, 2) AS lm_revenue,
+        SUM(a.selling_price) AS lm_gmv,
+        COUNT(DISTINCT a.store_id) AS lm_live_store
+    FROM order_details_v1 a
+    JOIN store_cities z ON a.store_id = z.store_id
+    WHERE MONTH(a.order_date) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+    GROUP BY z.state
+),
+new_customers AS (
+    SELECT
+        z.state,
+        y.category,
+        COUNT(DISTINCT a.customer_id) AS yday_new_customer
+    FROM order_details_v1 a
+    JOIN producthierarchy y ON a.product_id = y.product_id
+    JOIN store_cities z ON a.store_id = z.store_id
+    WHERE a.order_date = CURDATE() - INTERVAL 1 DAY
+      AND a.customer_id NOT IN (
+          SELECT customer_id
+          FROM order_details_v1
+          WHERE order_date < CURDATE() - INTERVAL 1 DAY
+      )
+    GROUP BY z.state, y.category
+),
+mtd_new_customers AS (
+    SELECT
+        z.state,
+        y.category,
+        COUNT(DISTINCT a.customer_id) AS mtd_new_customer
+    FROM order_details_v1 a
+    JOIN producthierarchy y ON a.product_id = y.product_id
+    JOIN store_cities z ON a.store_id = z.store_id
+    WHERE MONTH(a.order_date) = MONTH(CURDATE())
+      AND a.customer_id NOT IN (
+          SELECT customer_id
+          FROM order_details_v1
+          WHERE order_date < DATE_FORMAT(CURDATE(), '%Y-%m-01')
+      )
+    GROUP BY z.state, y.category
+),
+yday_order_growth AS (
+    SELECT
+        COUNT(order_id) AS order_growth
+    FROM order_details_v1
+    WHERE DATE(order_date) = CURDATE() - INTERVAL 1 DAY
+),
+mtd_order_growth AS (
+    SELECT
+        COALESCE(
+            (SELECT COUNT(order_id)
+             FROM order_details_v1
+             WHERE DATE(order_date) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+               AND DATE(order_date) < CURDATE()) -
+            (SELECT COUNT(order_id)
+             FROM order_details_v1
+             WHERE DATE(order_date) >= DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01')
+               AND DATE(order_date) < DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01')), 0
+        ) AS mtd_order_growth
+),
+mtd_gmv_growth AS (
+    SELECT
+        COALESCE(
+            (SELECT SUM(selling_price)
+             FROM order_details_v1
+             WHERE DATE(order_date) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+               AND DATE(order_date) < CURDATE()) -
+            (SELECT SUM(selling_price)
+             FROM order_details_v1
+             WHERE DATE(order_date) >= DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01')
+               AND DATE(order_date) < DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01')), 0
+        ) AS mtd_gmv_growth
+),
+mtd_revenue_growth AS (
+    SELECT
+        COALESCE(
+            (SELECT ROUND(SUM(selling_price) / 1.8, 2)
+             FROM order_details_v1
+             WHERE DATE(order_date) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+               AND DATE(order_date) < CURDATE()) -
+            (SELECT ROUND(SUM(selling_price) / 1.8, 2)
+             FROM order_details_v1
+             WHERE DATE(order_date) >= DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01')
+               AND DATE(order_date) < DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01')), 0
+        ) AS mtd_revenue_growth
+),
+yday_revenue_growth AS (
+    SELECT
+        (SELECT ROUND(SUM(selling_price) / 1.8, 2)
+         FROM order_details_v1
+         WHERE DATE(order_date) = CURDATE() - INTERVAL 1 DAY) -
+        (SELECT ROUND(SUM(selling_price) / 1.8, 2)
+         FROM order_details_v1
+         WHERE DATE(order_date) = CURDATE() - INTERVAL 2 DAY) AS revenue_growth
+)
+
+-- Final Select statement
+SELECT 
+    d.state,
+    d.yday_order,
+    d.yday_revenue,
+    d.gmv,
+    d.yday_user,
+    m.mtd_order,
+    m.mtd_revenue,
+    m.mtd_gmv,
+    m.mtd_user,
+    COALESCE(n.yday_new_customer, 0) AS yday_new_customer,
+    COALESCE(mn.mtd_new_customer, 0) AS mtd_new_customer,
+    (SELECT SUM(order_growth) FROM yday_order_growth) AS yday_order_growth,
+    (SELECT mtd_order_growth FROM mtd_order_growth) AS mtd_order_growth,
+    (SELECT revenue_growth FROM yday_revenue_growth) AS yday_revenue_growth,
+    (SELECT mtd_gmv_growth FROM mtd_gmv_growth) AS mtd_gmv_growth,
+    (SELECT mtd_revenue_growth FROM mtd_revenue_growth) AS mtd_revenue_growth,
+    (SELECT COUNT(DISTINCT a.store_id) FROM order_details_v1 a WHERE a.order_date = CURDATE() - INTERVAL 1 DAY) AS live_store_count,
+    (SELECT COUNT(DISTINCT a.product_id) FROM order_details_v1 a WHERE a.order_date = CURDATE() - INTERVAL 1 DAY) AS live_product_count,
+    (SELECT lm_order FROM lm_customers WHERE state = d.state LIMIT 1) AS lm_order,
+    (SELECT lm_revenue FROM lm_customers WHERE state = d.state LIMIT 1) AS lm_revenue,
+    (SELECT lm_gmv FROM lm_customers WHERE state = d.state LIMIT 1) AS lm_gmv,
+    (SELECT lm_live_store FROM lm_customers WHERE state = d.state LIMIT 1) AS lm_live_store
+FROM daily_metrics d
+LEFT JOIN mtd_customers m ON d.state = m.state
+LEFT JOIN new_customers n ON d.state = n.state
+LEFT JOIN mtd_new_customers mn ON d.state = mn.state AND n.category = mn.category
+ORDER BY d.yday_order DESC
+LIMIT 50;
+
+
+
+
+
+
+show tables
+describe order_details_v1;
+describe producthierarchy;
+describe store_cities;
+

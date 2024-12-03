@@ -1,0 +1,90 @@
+USE my_database;
+
+WITH categorized_data AS (
+    SELECT 
+        order_id,
+        customer_id,
+        selling_price,
+        CASE 
+            WHEN selling_price BETWEEN 1 AND 500 THEN '1-500'
+            WHEN selling_price BETWEEN 501 AND 1000 THEN '501-1000'
+            WHEN selling_price BETWEEN 1001 AND 2000 THEN '1001-2000'
+            WHEN selling_price BETWEEN 2001 AND 3000 THEN '2001-3000'
+            WHEN selling_price BETWEEN 3001 AND 4000 THEN '3001-4000'
+            WHEN selling_price BETWEEN 4001 AND 5000 THEN '4001-5000'
+            ELSE 'GTR 5000'
+        END AS price_range,
+        order_date
+    FROM order_details_v1
+),
+yday_metrics AS (
+    SELECT 
+        price_range,
+        COUNT(DISTINCT customer_id) AS yday_customers,
+        COUNT(DISTINCT order_id) AS yday_orders,
+        COUNT(DISTINCT order_id) / NULLIF(COUNT(DISTINCT customer_id), 0) AS yday_orders_by_customers
+    FROM categorized_data
+    WHERE order_date = CURDATE() - INTERVAL 1 DAY
+    GROUP BY price_range
+),
+mtd_metrics AS (
+    SELECT 
+        price_range,
+        COUNT(DISTINCT customer_id) AS mtd_customers,
+        COUNT(DISTINCT order_id) AS mtd_orders,
+        COUNT(DISTINCT order_id) / NULLIF(COUNT(DISTINCT customer_id), 0) AS mtd_orders_by_customers
+    FROM categorized_data
+    WHERE MONTH(order_date) = MONTH(CURDATE()) AND YEAR(order_date) = YEAR(CURDATE())
+    GROUP BY price_range
+),
+lmtd_metrics AS (
+    SELECT 
+        price_range,
+        COUNT(DISTINCT customer_id) AS lmtd_customers,
+        COUNT(DISTINCT order_id) AS lmtd_orders,
+        COUNT(DISTINCT order_id) / NULLIF(COUNT(DISTINCT customer_id), 0) AS lmtd_orders_by_customers
+    FROM categorized_data
+    WHERE MONTH(order_date) = MONTH(CURDATE() - INTERVAL 1 MONTH) AND YEAR(order_date) = YEAR(CURDATE())
+    GROUP BY price_range
+),
+lm_metrics AS (
+    SELECT 
+        price_range,
+        COUNT(DISTINCT customer_id) AS lm_customers,
+        COUNT(DISTINCT order_id) AS lm_orders,
+        COUNT(DISTINCT order_id) / NULLIF(COUNT(DISTINCT customer_id), 0) AS lm_orders_by_customers
+    FROM categorized_data
+    WHERE MONTH(order_date) = MONTH(CURDATE() - INTERVAL 2 MONTH) AND YEAR(order_date) = YEAR(CURDATE())
+    GROUP BY price_range
+)
+
+SELECT 
+    cd.price_range AS `Order_Range`,
+    COALESCE(y.yday_customers, 0) AS `Yday Customers`,
+    COALESCE(y.yday_orders, 0) AS `Yday Orders`,
+    COALESCE(y.yday_orders_by_customers, 0) AS `Yday Orders By Customers`,
+    COALESCE(m.mtd_customers, 0) AS `MTD Customers`,
+    COALESCE(m.mtd_orders, 0) AS `MTD Orders`,
+    COALESCE(m.mtd_orders_by_customers, 0) AS `MTD Orders By Customers`,
+    COALESCE(lm.lmtd_customers, 0) AS `LMTD Customers`,
+    COALESCE(lm.lmtd_orders, 0) AS `LMTD Orders`,
+    COALESCE(lm.lmtd_orders_by_customers, 0) AS `LMTD Orders By Customers`,
+    COALESCE(lm2.lm_customers, 0) AS `LM Customers`,
+    COALESCE(lm2.lm_orders, 0) AS `LM Orders`,
+    COALESCE(lm2.lm_orders_by_customers, 0) AS `LM Orders By Customers`
+FROM 
+    (SELECT DISTINCT price_range FROM categorized_data) cd
+LEFT JOIN yday_metrics y ON cd.price_range = y.price_range
+LEFT JOIN mtd_metrics m ON cd.price_range = m.price_range
+LEFT JOIN lmtd_metrics lm ON cd.price_range = lm.price_range
+LEFT JOIN lm_metrics lm2 ON cd.price_range = lm2.price_range
+ORDER BY 
+    FIELD(cd.price_range, '1-500', '501-1000', '1001-2000', '2001-3000', '3001-4000', '4001-5000', 'GTR 5000');
+
+
+
+show tables
+describe order_details_v1;
+describe producthierarchy;
+describe store_cities;
+
